@@ -1,75 +1,89 @@
-# Nuxt Minimal Starter
+# Waveger 🎵
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A modern music charts explorer with real-time data and audio previews. Built with Nuxt 3, Waveger fetches Billboard chart data and enriches it with Apple Music integration for seamless audio previews.
+
+## Features
+
+- 🎯 **Real-time Billboard Charts** - Browse current and historical chart data
+- 🎧 **Audio Previews** - Listen to song previews via Apple Music integration
+- ⭐ **Favorites System** - Save and manage your favorite tracks
+- 📱 **Responsive Design** - Modern UI with Nuxt UI and TailwindCSS
+- ⚡ **Performance Optimized** - Multi-layer caching with Redis and TanStack Query
+
+## Tech Stack
+
+- **Framework**: Nuxt 3 with Vue 3 Composition API
+- **Styling**: Nuxt UI (@nuxt/ui) with TailwindCSS
+- **State Management**: Pinia stores with VueUse composables
+- **Data Fetching**: TanStack Query (@tanstack/vue-query)
+- **Audio**: Howler.js via @vueuse/sound
+- **Validation**: Zod schemas for runtime type safety
+- **Caching**: Redis (Upstash) for API response caching
 
 ## Setup
 
-Make sure to install dependencies:
+Install dependencies:
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+## Development
 
 Start the development server on `http://localhost:3000`:
 
 ```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## Build
 
 Build the application for production:
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+Preview the production build:
 
 ```bash
-# npm
 npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Generate static site:
+
+```bash
+npm run generate
+```
+
+## Testing
+
+Run tests with Vitest:
+
+```bash
+npx vitest
+```
+
+## Architecture
+
+### Core Components
+
+- **stores/chart.ts** - Main application state management
+- **composables/useCharts.ts** - Chart data fetching with caching
+- **composables/useAudio.ts** - Audio playbook management
+- **server/api/charts/[id].get.ts** - API endpoint with Apple Music enrichment
+
+### Data Flow
+
+1. Client selects chart → Pinia store updates → TanStack Query fetches data
+2. API checks Redis cache → Falls back to Billboard API → Enriches with Apple Music
+3. Audio previews managed through Howler.js with progress tracking
+4. User preferences persisted via VueUse localStorage composables
+
+## Configuration
+
+API credentials and Redis connection are configured in `nuxt.config.ts`. For production, these should be moved to environment variables.
+
+## License
+
+MIT
