@@ -11,6 +11,9 @@ export interface Song {
   weeks_on_chart: number
   apple_music?: AppleMusicData | null
   url: string
+  // Search-specific properties (added by Fuse.js)
+  _searchScore?: number
+  _searchMatches?: any[]
 }
 
 export interface AppleMusicData {
@@ -55,6 +58,15 @@ export const SongSchema = z.object({
   url: z.string().url()
 })
 
+// Schema for raw Billboard API response
+export const BillboardResponseSchema = z.object({
+  info: z.string(),
+  songs: z.array(SongSchema),
+  title: z.string(),
+  week: z.string()
+})
+
+// Schema for processed chart data (includes cached field)
 export const ChartDataSchema = z.object({
   cached: z.boolean(),
   info: z.string(),

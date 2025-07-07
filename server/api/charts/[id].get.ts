@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { ChartDataSchema } from '~/types'
+import { BillboardResponseSchema } from '~/types'
 import { CACHE_KEYS, CACHE_TTL } from '~/utils/constants'
+import { enrichWithAppleMusic } from '~/server/utils/appleMusic'
 
 // Input validation schema
 const QuerySchema = z.object({
@@ -39,8 +40,9 @@ export default defineEventHandler(async (event) => {
     let data = await fetchBillboardChart(chartId, week)
 
     // Validate response
-    const validationResult = ChartDataSchema.safeParse(data)
+    const validationResult = BillboardResponseSchema.safeParse(data)
     if (!validationResult.success) {
+      console.error('Billboard API validation error:', validationResult.error)
       throw createError({
         statusCode: 502,
         statusMessage: 'Invalid data from Billboard API'

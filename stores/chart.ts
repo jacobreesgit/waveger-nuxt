@@ -5,7 +5,7 @@ export const useChartStore = defineStore('chart', () => {
   const favorites = useLocalStorage<number[]>('waveger-favorites', [])
 
   // Audio management
-  const { playingTrackId, volume, playPreview, getAudioInfo } = useAudio()
+  const { playingTrackId, playPreview, getAudioInfo, stopCurrentAudio, pauseCurrentAudio } = useAudio()
 
   // Chart data with TanStack Query
   const { useChartQuery, prefetchChart } = useCharts()
@@ -56,9 +56,10 @@ export const useChartStore = defineStore('chart', () => {
     
     // Audio
     playingTrackId,
-    volume,
     playPreview,
     getAudioInfo,
+    stopCurrentAudio,
+    pauseCurrentAudio,
     
     // Actions
     changeChart,

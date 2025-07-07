@@ -1,3 +1,5 @@
+import { generateAppleMusicToken } from '~/server/utils/appleMusic'
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const startTime = Date.now()
@@ -23,24 +25,10 @@ export default defineEventHandler(async (event) => {
     const isHealthy = await checkRedisHealth()
     const redisLatency = Date.now() - redisStart
     
-    if (isHealthy) {
-      // Test actual Redis operations
-      const testKey = `health_check:${Date.now()}`
-      await cacheSet(testKey, { test: true }, 10)
-      const testResult = await cacheGet(testKey)
-      await cacheDelete(testKey)
-      
-      health.services.redis = {
-        status: testResult ? 'healthy' : 'degraded',
-        latency: redisLatency,
-        error: null
-      }
-    } else {
-      health.services.redis = {
-        status: 'unhealthy',
-        latency: redisLatency,
-        error: 'Redis ping failed'
-      }
+    health.services.redis = {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      latency: redisLatency,
+      error: isHealthy ? null : 'Redis ping failed'
     }
   } catch (error) {
     health.services.redis = {

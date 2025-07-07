@@ -1,13 +1,12 @@
-import Redis from 'ioredis'
+import { Redis } from '@upstash/redis'
 
 let redis: Redis | null = null
 
 export function getRedisClient(): Redis {
   if (!redis) {
-    const config = useRuntimeConfig()
-    redis = new Redis(config.redisUrl, {
-      maxRetriesPerRequest: 3,
-      lazyConnect: true
+    redis = new Redis({
+      url: 'https://premium-humpback-55463.upstash.io',
+      token: 'AdinAAIjcDFmYTM3OTM0Y2I1ZmI0NmNkODkyMWM4ODBlYjA2MWQwN3AxMA',
     })
   }
   return redis
@@ -18,7 +17,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   try {
     const redis = getRedisClient()
     const cached = await redis.get(key)
-    return cached ? JSON.parse(cached) : null
+    return cached ? JSON.parse(cached as string) : null
   } catch (error) {
     console.error('Cache get error:', error)
     return null
@@ -28,7 +27,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 export async function cacheSet(key: string, value: any, ttl: number = 3600): Promise<void> {
   try {
     const redis = getRedisClient()
-    await redis.setex(key, ttl, JSON.stringify(value))
+    await redis.set(key, JSON.stringify(value), { ex: ttl })
   } catch (error) {
     console.error('Cache set error:', error)
   }

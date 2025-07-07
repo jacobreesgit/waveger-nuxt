@@ -18,6 +18,9 @@ export const useCharts = () => {
       if (week?.value) {
         key.push(week.value)
       }
+      if (includeAppleMusic.value) {
+        key.push('apple-music')
+      }
       return key
     })
 
@@ -26,7 +29,7 @@ export const useCharts = () => {
       queryFn: async () => {
         const params = new URLSearchParams()
         if (week?.value) params.append('week', week.value)
-        if (!includeAppleMusic.value) params.append('apple_music', 'false')
+        if (includeAppleMusic.value) params.append('apple_music', 'true')
 
         const response = await $fetch<ChartData>(`/api/charts/${chartId.value}?${params}`)
         return response
