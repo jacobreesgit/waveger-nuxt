@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { $fetch } from 'ofetch'
+import { $fetch as _$fetch } from 'ofetch'
 
 // Simple health endpoint test
 describe('Health API Endpoint', () => {
@@ -69,28 +69,28 @@ describe('Health API Endpoint', () => {
 
   it('should validate overall health status logic', () => {
     // Test healthy scenario
-    let services = {
+    const _services = {
       redis: { status: 'healthy' },
       billboard: { status: 'healthy' },
       appleMusic: { status: 'healthy' }
     }
     
-    let overallStatus = services.redis.status === 'healthy' && services.billboard.status === 'healthy' 
+    let overallStatus = _services.redis.status === 'healthy' && _services.billboard.status === 'healthy' 
       ? 'healthy' : 'degraded'
     
     expect(overallStatus).toBe('healthy')
 
     // Test degraded scenario
-    services.redis.status = 'degraded'
-    overallStatus = services.redis.status === 'healthy' && services.billboard.status === 'healthy' 
+    _services.redis.status = 'degraded'
+    overallStatus = _services.redis.status === 'healthy' && _services.billboard.status === 'healthy' 
       ? 'healthy' : 'degraded'
     
     expect(overallStatus).toBe('degraded')
 
     // Test unhealthy scenario
-    services.redis.status = 'unhealthy'
-    services.billboard.status = 'unhealthy'
-    overallStatus = services.redis.status === 'healthy' && services.billboard.status === 'healthy' 
+    _services.redis.status = 'unhealthy'
+    _services.billboard.status = 'unhealthy'
+    overallStatus = _services.redis.status === 'healthy' && _services.billboard.status === 'healthy' 
       ? 'healthy' : 'unhealthy'
     
     expect(overallStatus).toBe('unhealthy')

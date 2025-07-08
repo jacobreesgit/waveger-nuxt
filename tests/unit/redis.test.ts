@@ -23,7 +23,7 @@ const mockRedisInstance = {
 describe('Redis Utils', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    MockRedis.mockImplementation(() => mockRedisInstance as any)
+    MockRedis.mockImplementation(() => mockRedisInstance as unknown as Redis)
   })
 
   afterEach(() => {
@@ -32,7 +32,7 @@ describe('Redis Utils', () => {
 
   describe('getRedisClient', () => {
     it('should create Redis client with correct configuration', () => {
-      const client = getRedisClient()
+      const _client = getRedisClient()
       
       expect(MockRedis).toHaveBeenCalledWith('redis://localhost:6379', {
         maxRetriesPerRequest: 3,
@@ -119,7 +119,7 @@ describe('Redis Utils', () => {
     })
 
     it('should handle circular JSON structures', async () => {
-      const circularObj: any = { message: 'test' }
+      const circularObj: Record<string, unknown> = { message: 'test' }
       circularObj.self = circularObj
       
       await expect(cacheSet('test-key', circularObj)).resolves.toBeUndefined()

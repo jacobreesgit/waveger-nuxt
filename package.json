@@ -7,9 +7,11 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "check": "nuxt typecheck && eslint ."
   },
   "dependencies": {
+    "@internationalized/date": "^3.8.2",
     "@nuxt/eslint": "^1.5.2",
     "@nuxt/icon": "^1.15.0",
     "@nuxt/image": "^1.10.0",

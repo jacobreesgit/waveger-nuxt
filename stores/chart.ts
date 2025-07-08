@@ -74,7 +74,9 @@ export const useChartStore = defineStore('chart', () => {
   const goToPreviousWeek = () => {
     const currentDate = new Date(selectedDate.value)
     currentDate.setDate(currentDate.getDate() - 7)
-    selectedDate.value = currentDate.toISOString().split('T')[0]
+    const newDate = currentDate.toISOString().split('T')[0]
+    selectedDate.value = newDate
+    console.log('🔄 Previous week:', newDate)
   }
 
   const goToNextWeek = () => {
@@ -87,6 +89,7 @@ export const useChartStore = defineStore('chart', () => {
       // Don't go beyond current week
       if (newDate <= today) {
         selectedDate.value = newDate
+        console.log('🔄 Next week:', newDate)
       }
     }
   }

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full" ref="searchContainer">
+  <div ref="searchContainer" class="relative w-full">
     <!-- Search Input -->
     <div class="relative">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -15,6 +15,8 @@
         v-model="searchQuery"
         type="text"
         placeholder="Search songs and artists..."
+        autocomplete="off"
+        spellcheck="false"
         class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
         :class="{
           'ring-2 ring-blue-500 border-blue-500': isFocused,
@@ -24,17 +26,15 @@
         @focus="handleFocus"
         @blur="handleBlur"
         @keydown="handleKeydown"
-        autocomplete="off"
-        spellcheck="false"
-      />
+      >
       
       <!-- Clear Button -->
       <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
         <button
           v-if="searchQuery"
-          @click="handleClear"
-          class="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors"
           type="button"
+          class="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors cursor-pointer"
+          @click="handleClear"
         >
           <Icon name="heroicons:x-mark-20-solid" class="h-5 w-5" />
         </button>
@@ -55,7 +55,7 @@ interface Props {
   placeholder?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const _props = withDefaults(defineProps<Props>(), {
   placeholder: 'Search songs and artists...'
 })
 

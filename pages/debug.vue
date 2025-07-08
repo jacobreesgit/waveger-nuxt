@@ -33,20 +33,20 @@
     
     <div class="space-y-2">
       <button 
-        @click="testSong1" 
-        class="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+        class="bg-blue-500 text-white px-4 py-2 rounded mr-2 cursor-pointer" 
+        @click="testSong1"
       >
         Test Song 1
       </button>
       <button 
-        @click="testSong2" 
-        class="bg-green-500 text-white px-4 py-2 rounded mr-2"
+        class="bg-green-500 text-white px-4 py-2 rounded mr-2 cursor-pointer" 
+        @click="testSong2"
       >
         Test Song 2
       </button>
       <button 
-        @click="clearAudio" 
-        class="bg-red-500 text-white px-4 py-2 rounded"
+        class="bg-red-500 text-white px-4 py-2 rounded cursor-pointer" 
+        @click="clearAudio"
       >
         Clear Audio
       </button>

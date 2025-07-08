@@ -24,7 +24,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function cacheSet(key: string, value: any, ttl: number = 3600): Promise<void> {
+export async function cacheSet(key: string, value: unknown, ttl: number = 3600): Promise<void> {
   try {
     const redis = getRedisClient()
     await redis.set(key, value, { ex: ttl })

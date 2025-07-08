@@ -153,7 +153,7 @@ describe('Chart API Integration Tests', () => {
     })
 
     it('should handle mixed success/failure in enrichment', async () => {
-      const chartData = {
+      const _chartData = {
         songs: [
           { name: 'Song 1', artist: 'Artist 1' },
           { name: 'Song 2', artist: 'Artist 2' },
@@ -298,7 +298,7 @@ describe('Chart API Integration Tests', () => {
 
     it('should simulate cache corruption scenarios', async () => {
       // Simulate retrieving corrupted data from cache
-      const corruptedData = { invalid: 'structure' }
+      const _corruptedData = { invalid: 'structure' }
       
       // Should fall back to API
       mockFetch.mockResolvedValue(mockBillboardData)

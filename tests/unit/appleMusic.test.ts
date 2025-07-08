@@ -35,7 +35,7 @@ describe('Apple Music Utils', () => {
     const mockToken = 'mock.jwt.token'
 
     beforeEach(() => {
-      mockImportPKCS8.mockResolvedValue(mockPrivateKey as any)
+      mockImportPKCS8.mockResolvedValue(mockPrivateKey as unknown as CryptoKey)
       
       const mockJWT = {
         setProtectedHeader: vi.fn().mockReturnThis(),
@@ -45,7 +45,7 @@ describe('Apple Music Utils', () => {
         sign: vi.fn().mockResolvedValue(mockToken)
       }
       
-      mockSignJWT.mockReturnValue(mockJWT as any)
+      mockSignJWT.mockReturnValue(mockJWT as unknown as SignJWT)
     })
 
     it('should generate valid Apple Music token', async () => {
@@ -130,7 +130,7 @@ describe('Apple Music Utils', () => {
 
     beforeEach(() => {
       // Mock token generation
-      mockImportPKCS8.mockResolvedValue('mock-key' as any)
+      mockImportPKCS8.mockResolvedValue('mock-key' as unknown as CryptoKey)
       const mockJWT = {
         setProtectedHeader: vi.fn().mockReturnThis(),
         setIssuer: vi.fn().mockReturnThis(),
@@ -138,7 +138,7 @@ describe('Apple Music Utils', () => {
         setExpirationTime: vi.fn().mockReturnThis(),
         sign: vi.fn().mockResolvedValue('mock.token')
       }
-      mockSignJWT.mockReturnValue(mockJWT as any)
+      mockSignJWT.mockReturnValue(mockJWT as unknown as SignJWT)
     })
 
     it('should successfully search Apple Music', async () => {
@@ -235,7 +235,7 @@ describe('Apple Music Utils', () => {
 
     beforeEach(() => {
       // Mock token generation and API responses
-      mockImportPKCS8.mockResolvedValue('mock-key' as any)
+      mockImportPKCS8.mockResolvedValue('mock-key' as unknown as CryptoKey)
       const mockJWT = {
         setProtectedHeader: vi.fn().mockReturnThis(),
         setIssuer: vi.fn().mockReturnThis(),
@@ -243,7 +243,7 @@ describe('Apple Music Utils', () => {
         setExpirationTime: vi.fn().mockReturnThis(),
         sign: vi.fn().mockResolvedValue('mock.token')
       }
-      mockSignJWT.mockReturnValue(mockJWT as any)
+      mockSignJWT.mockReturnValue(mockJWT as unknown as SignJWT)
     })
 
     it('should enrich all songs with Apple Music data', async () => {
@@ -268,7 +268,8 @@ describe('Apple Music Utils', () => {
       const result = await enrichWithAppleMusic(mockChartData)
       
       expect(result.songs).toHaveLength(3)
-      result.songs.forEach((song: any) => {
+      const songs = result.songs as Record<string, unknown>[]
+      songs.forEach((song: Record<string, unknown>) => {
         expect(song).toHaveProperty('apple_music')
         expect(song.apple_music).toEqual({
           id: '123',
@@ -297,9 +298,10 @@ describe('Apple Music Utils', () => {
       
       const result = await enrichWithAppleMusic(mockChartData)
       
-      expect(result.songs[0].apple_music).toBeDefined()
-      expect(result.songs[1].apple_music).toBeNull()
-      expect(result.songs[2].apple_music).toBeNull()
+      const songs = result.songs as Record<string, unknown>[]
+      expect(songs[0].apple_music).toBeDefined()
+      expect(songs[1].apple_music).toBeNull()
+      expect(songs[2].apple_music).toBeNull()
     })
 
     it('should handle invalid chart data gracefully', async () => {

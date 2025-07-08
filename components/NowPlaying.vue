@@ -16,7 +16,7 @@
           :src="currentSong.apple_music?.artwork_url || currentSong.image"
           :alt="`${currentSong.name} cover`"
           class="w-12 h-12 rounded object-cover"
-        />
+        >
         
         <div class="flex-1 min-w-0">
           <h4 class="font-semibold truncate">{{ currentSong.name }}</h4>
@@ -34,8 +34,8 @@
           
           <!-- Close button -->
           <button
+            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
             @click="closeNowPlaying"
-            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <Icon name="heroicons:x-mark-20-solid" class="w-5 h-5" />
           </button>

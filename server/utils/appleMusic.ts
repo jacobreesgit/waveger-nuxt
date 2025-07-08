@@ -99,7 +99,7 @@ export async function searchAppleMusic(title: string, artist: string): Promise<A
 }
 
 // Modern parallel enrichment
-export async function enrichWithAppleMusic(chartData: any): Promise<any> {
+export async function enrichWithAppleMusic(chartData: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!chartData.songs || !Array.isArray(chartData.songs)) {
     return chartData
   }
@@ -114,8 +114,8 @@ export async function enrichWithAppleMusic(chartData: any): Promise<any> {
     }
 
     for (const batch of batches) {
-      const enrichPromises = batch.map(async (song: any) => {
-        const appleMusicData = await searchAppleMusic(song.name || song.title, song.artist)
+      const enrichPromises = batch.map(async (song: Record<string, unknown>) => {
+        const appleMusicData = await searchAppleMusic((song.name as string) || (song.title as string), song.artist as string)
         return { ...song, apple_music: appleMusicData }
       })
 
@@ -123,12 +123,13 @@ export async function enrichWithAppleMusic(chartData: any): Promise<any> {
       
       // Update original songs array
       enrichedBatch.forEach((result, index) => {
-        const originalIndex = chartData.songs.indexOf(batch[index])
+        const songs = chartData.songs as Record<string, unknown>[]
+        const originalIndex = songs.indexOf(batch[index])
         if (result.status === 'fulfilled') {
-          chartData.songs[originalIndex] = result.value
+          songs[originalIndex] = result.value
         } else {
           console.error(`Failed to enrich song ${originalIndex}:`, result.reason)
-          chartData.songs[originalIndex] = { ...batch[index], apple_music: null }
+          songs[originalIndex] = { ...batch[index], apple_music: null }
         }
       })
 

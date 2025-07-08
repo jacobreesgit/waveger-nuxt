@@ -66,12 +66,13 @@ export default defineEventHandler(async (event) => {
           latency: billboardLatency,
           error: null
         }
-      } catch (apiError: any) {
+      } catch (apiError: unknown) {
         const billboardLatency = Date.now() - billboardStart
+        const status = (apiError && typeof apiError === 'object' && 'status' in apiError && (apiError as {status: number}).status === 429) ? 'rate_limited' : 'unhealthy'
         health.services.billboard = {
-          status: apiError?.status === 429 ? 'rate_limited' : 'unhealthy',
+          status,
           latency: billboardLatency,
-          error: `${apiError?.status || 'Unknown'}: ${apiError?.statusText || 'Error'}`
+          error: `${(apiError && typeof apiError === 'object' && 'status' in apiError) ? (apiError as {status: number}).status : 'Unknown'}: ${(apiError && typeof apiError === 'object' && 'statusText' in apiError) ? (apiError as {statusText: string}).statusText : 'Error'}`
         }
       }
     }
@@ -119,11 +120,11 @@ export default defineEventHandler(async (event) => {
             latency: appleMusicLatency,
             error: null
           }
-        } catch (apiError: any) {
+        } catch (apiError: unknown) {
           health.services.appleMusic = {
             status: 'unhealthy',
             latency: appleMusicLatency,
-            error: `API test failed: ${apiError?.status || 'Unknown'}`
+            error: `API test failed: ${(apiError && typeof apiError === 'object' && 'status' in apiError) ? (apiError as {status: number}).status : 'Unknown'}`
           }
         }
       } else {
@@ -143,7 +144,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Calculate overall system status
-  const serviceStatuses = Object.values(health.services).map(service => service.status)
+  const _serviceStatuses = Object.values(health.services).map(service => service.status)
   const criticalServices = [health.services.redis.status, health.services.billboard.status]
   
   if (criticalServices.every(status => status === 'healthy')) {

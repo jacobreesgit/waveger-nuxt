@@ -16,11 +16,11 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   nuxtApp.vueApp.use(VueQueryPlugin, { queryClient })
 
-  if (process.server) {
+  if (import.meta.server) {
     nuxtApp.ssrContext!.nuxt.vueQueryState = dehydrate(queryClient)
   }
 
-  if (process.client) {
+  if (import.meta.client) {
     const vueQueryState = nuxtApp.ssrContext?.nuxt.vueQueryState || nuxtApp.payload.vueQueryState
     if (vueQueryState) {
       hydrate(queryClient, vueQueryState)

@@ -258,7 +258,7 @@ describe('API Connection Tests', () => {
       mockCheckRedisHealth.mockResolvedValue(true)
       mockGenerateAppleMusicToken.mockResolvedValue('token')
       
-      const healthCheck = {
+      const _healthCheck = {
         status: 'ok',
         timestamp: expect.any(String),
         services: {

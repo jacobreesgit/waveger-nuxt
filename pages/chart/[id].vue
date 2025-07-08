@@ -1,92 +1,85 @@
 <template>
-  <div class="max-w-6xl mx-auto p-8">
-    <div class="mb-8">
-      <NuxtLink
-        to="/"
-        class="text-blue-600 hover:text-blue-800 mb-4 inline-block"
-        >← Back to Home</NuxtLink
-      >
-      <div class="flex items-center justify-between mb-2">
-        <!-- Previous Week Button -->
-        <button
-          @click="goToPreviousWeek"
-          class="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
-          title="Previous week"
+  <div class="min-h-screen flex flex-col">
+    <div class="max-w-6xl mx-auto p-8 flex-1 flex flex-col w-full">
+      <div class="mb-8">
+        <NuxtLink
+          to="/"
+          class="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+          >← Back to Home</NuxtLink
         >
-          <Icon name="heroicons:chevron-left-20-solid" class="w-5 h-5" />
-        </button>
-
         <!-- Chart Title -->
-        <h1 class="text-3xl font-bold text-center">
-          {{ chartData?.title || formatChartName(chartId) }}
+        <h1 class="text-3xl font-bold text-center mb-4">
+          {{ getChartTitle(chartId) }}
         </h1>
 
-        <!-- Next Week Button -->
-        <button
-          @click="goToNextWeek"
-          :disabled="isCurrentWeek"
-          class="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors disabled:text-gray-300 disabled:hover:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-          title="Next week"
-        >
-          <Icon name="heroicons:chevron-right-20-solid" class="w-5 h-5" />
-        </button>
+        <!-- Date Navigation -->
+        <div class="flex items-center justify-center mb-2">
+          <ChartDatePicker :is-loading="isLoading" />
+        </div>
+
+        <p class="text-gray-600 text-center">
+          {{ weekDisplay }}
+        </p>
       </div>
-      
-      <p class="text-gray-600 text-center" v-if="chartData">
-        Week of {{ chartData.week }}
-      </p>
-    </div>
 
-    <!-- Search Bar -->
-    <div v-if="chartData?.songs" class="mb-8">
-      <SearchBar
-        :songs="chartData.songs"
-        @search="handleSearch"
-        @select="handleSongSelect"
-        @clear="handleSearchClear"
-      />
-    </div>
-
-    <ClientOnly>
-      <div v-if="chartData" class="space-y-4">
-        <ChartCard
-          v-for="song in displayedSongs"
-          :key="`${song.position}-${song.name}`"
-          :song="song"
+      <!-- Search Bar -->
+      <div v-if="chartData?.songs" class="mb-8">
+        <SearchBar
+          :songs="chartData.songs"
+          @search="handleSearch"
+          @select="handleSongSelect"
+          @clear="handleSearchClear"
         />
       </div>
 
-      <div v-else-if="isLoading" class="text-center py-12">
-        <div
-          class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mx-auto"
-        ></div>
-        <p class="mt-4 text-gray-600">Loading chart...</p>
-      </div>
-
-      <div v-else-if="error" class="text-center py-12">
-        <p class="text-red-600">Failed to load chart data</p>
-        <button
-          @click="() => refetch()"
-          class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Retry
-        </button>
-      </div>
-
-      <template #fallback>
-        <div class="text-center py-12">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mx-auto"
-          ></div>
-          <p class="mt-4 text-gray-600">Loading chart...</p>
+      <ClientOnly>
+        <div v-if="chartData" class="space-y-4">
+          <ChartCard
+            v-for="song in displayedSongs"
+            :key="`${song.position}-${song.name}`"
+            :song="song"
+          />
         </div>
-      </template>
-    </ClientOnly>
+
+        <div
+          v-else-if="isLoading"
+          class="flex-1 flex items-center justify-center"
+        >
+          <div class="text-center">
+            <div
+              class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mx-auto"
+            />
+            <p class="mt-4 text-gray-600">Loading chart...</p>
+          </div>
+        </div>
+
+        <div v-else-if="error" class="text-center py-12">
+          <p class="text-red-600">Failed to load chart data</p>
+          <button
+            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
+            @click="() => refetch()"
+          >
+            Retry
+          </button>
+        </div>
+
+        <template #fallback>
+          <div class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+              <div
+                class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mx-auto"
+              />
+              <p class="mt-4 text-gray-600">Loading chart...</p>
+            </div>
+          </div>
+        </template>
+      </ClientOnly>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Song } from '~/types'
+import type { Song } from "~/types";
 
 const route = useRoute();
 const chartId = computed(() => {
@@ -94,55 +87,70 @@ const chartId = computed(() => {
   return Array.isArray(id) ? id[0] : String(id);
 });
 
-// Chart store for week navigation
-const chartStore = useChartStore()
-const { isCurrentWeek, goToPreviousWeek, goToNextWeek } = chartStore
+// Chart store for week navigation and data
+const chartStore = useChartStore();
+const { chartData, isLoading, error } = storeToRefs(chartStore);
 
-const { useChartQuery } = useCharts();
-const { data: chartData, isLoading, error, refetch } = useChartQuery(chartId, {
-  includeAppleMusic: ref(true) // Enable Apple Music enrichment for audio previews
-});
+// Set the chart in the store when the route changes
+watch(
+  chartId,
+  (newChartId) => {
+    chartStore.changeChart(newChartId);
+  },
+  { immediate: true }
+);
+
+// Create a refetch function that works with the store
+const refetch = () => {
+  // We can trigger a refetch by temporarily changing the date and then setting it back
+  // This will invalidate the query cache
+  const currentDate = chartStore.selectedDate;
+  chartStore.setDate(currentDate);
+};
 
 // Search functionality
-const searchQuery = ref('')
-const isSearchActive = ref(false)
+const searchQuery = ref("");
+const isSearchActive = ref(false);
 
 // Computed songs list for display (filtered or full list)
 const displayedSongs = computed(() => {
-  if (!chartData.value?.songs) return []
-  
+  if (!chartData.value?.songs) return [];
+
   if (!isSearchActive.value || !searchQuery.value.trim()) {
-    return chartData.value.songs
+    return chartData.value.songs;
   }
 
   // Filter songs based on search query
-  const query = searchQuery.value.toLowerCase().trim()
-  return chartData.value.songs.filter((song: Song) =>
-    song.name.toLowerCase().includes(query) ||
-    song.artist.toLowerCase().includes(query)
-  )
-})
+  const query = searchQuery.value.toLowerCase().trim();
+  return chartData.value.songs.filter(
+    (song: Song) =>
+      song.name.toLowerCase().includes(query) ||
+      song.artist.toLowerCase().includes(query)
+  );
+});
 
 // Search handlers
 const handleSearch = (query: string) => {
-  searchQuery.value = query
-  isSearchActive.value = !!query.trim()
-}
+  searchQuery.value = query;
+  isSearchActive.value = !!query.trim();
+};
 
 const handleSongSelect = (song: Song) => {
   // Scroll to selected song
   nextTick(() => {
-    const element = document.querySelector(`[data-song-position="${song.position}"]`)
+    const element = document.querySelector(
+      `[data-song-position="${song.position}"]`
+    );
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  })
-}
+  });
+};
 
 const handleSearchClear = () => {
-  searchQuery.value = ''
-  isSearchActive.value = false
-}
+  searchQuery.value = "";
+  isSearchActive.value = false;
+};
 
 const formatChartName = (id: string) => {
   return id
@@ -151,4 +159,57 @@ const formatChartName = (id: string) => {
     .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+// Hardcoded chart titles to match page titles
+const chartTitleMap: Record<string, string> = {
+  'hot-100': 'Hot 100',
+  'billboard-200': 'Billboard 200',
+  'artist-100': 'Artist 100'
+};
+
+const getChartTitle = (id: string) => {
+  return chartTitleMap[id] || formatChartName(id);
+};
+
+// Chart-specific week offset mapping (based on API analysis)
+// Hot 100: shows July 5 when today is July 8 = -3 days
+// Billboard 200: shows July 12 when today is July 8 = +4 days  
+// Artist 100: shows July 12 when today is July 8 = +4 days
+const chartWeekOffsets: Record<string, number> = {
+  'hot-100': -3,       // Hot 100 week is 3 days behind current date
+  'billboard-200': 4,   // Billboard 200 week is 4 days ahead of current date  
+  'artist-100': 4      // Artist 100 week is 4 days ahead of current date
+};
+
+// Format week display to match Billboard API format with chart-specific offsets
+const formatWeekDisplay = (dateString: string, chartId: string) => {
+  const date = new Date(dateString);
+  const offset = chartWeekOffsets[chartId] || 0;
+  
+  // Apply chart-specific offset (subtract days to match API format)
+  const adjustedDate = new Date(date);
+  adjustedDate.setDate(adjustedDate.getDate() + offset);
+  
+  const options: Intl.DateTimeFormatOptions = { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  };
+  return `Week of ${adjustedDate.toLocaleDateString('en-US', options)}`;
+};
+
+// Computed week display - always shows formatted week, never placeholder
+const weekDisplay = computed(() => {
+  if (chartData.value?.week) {
+    return chartData.value.week;
+  }
+  // Show formatted week based on selected date and chart-specific offset even while loading
+  return formatWeekDisplay(chartStore.selectedDate, chartId.value);
+});
+
+// Set page title based on chart ID
+useSeoMeta({
+  title: () => `${getChartTitle(chartId.value)} - Waveger`,
+  description: () => `View the latest ${getChartTitle(chartId.value)} chart with real-time data and audio previews`
+});
 </script>

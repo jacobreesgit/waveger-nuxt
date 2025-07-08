@@ -86,11 +86,11 @@ export const useAudio = () => {
             console.log('Howl onstop fired for track:', trackId)
             audioProgress.value[trackId] = 0
           },
-          onloaderror: (id: any, error: any) => {
+          onloaderror: (id: number, error: unknown) => {
             console.error('Audio load error:', error)
             playingTrackId.value = null
           },
-          onplayerror: (id: any, error: any) => {
+          onplayerror: (id: number, error: unknown) => {
             console.error('Audio playback error:', error)
             playingTrackId.value = null
           }

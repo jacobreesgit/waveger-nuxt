@@ -13,7 +13,7 @@ export interface Song {
   url: string
   // Search-specific properties (added by Fuse.js)
   _searchScore?: number
-  _searchMatches?: any[]
+  _searchMatches?: unknown[]
 }
 
 export interface AppleMusicData {

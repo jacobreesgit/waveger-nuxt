@@ -63,9 +63,9 @@ export default defineEventHandler(async (event) => {
     if (chartConfig?.type === CHART_TYPES.ARTIST) {
       data = {
         ...data,
-        songs: data.songs.map((song: any) => ({
+        songs: data.songs.map((song: Record<string, unknown>) => ({
           ...song,
-          artist: song.artist || song.name // For artist charts, use name as artist
+          artist: (song.artist as string) || (song.name as string) // For artist charts, use name as artist
         }))
       }
     }
@@ -134,8 +134,8 @@ async function fetchBillboardChart(chartId: string, week?: string) {
     }
 
     return await response.json()
-  } catch (error: any) {
-    if (error.name === 'TimeoutError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'TimeoutError') {
       throw createError({
         statusCode: 504,
         statusMessage: 'Billboard API timeout'
