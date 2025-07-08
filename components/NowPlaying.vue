@@ -13,7 +13,7 @@
     >
       <div class="flex items-center gap-4">
         <img
-          :src="currentSong.image"
+          :src="currentSong.apple_music?.artwork_url || currentSong.image"
           :alt="`${currentSong.name} cover`"
           class="w-12 h-12 rounded object-cover"
         />
@@ -32,9 +32,9 @@
             />
           </div>
           
-          <!-- Stop button -->
+          <!-- Close button -->
           <button
-            @click="stopAudio"
+            @click="closeNowPlaying"
             class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <Icon name="heroicons:x-mark-20-solid" class="w-5 h-5" />
@@ -48,22 +48,37 @@
 <script setup lang="ts">
 const chartStore = useChartStore()
 
-// Find the currently playing song
+// Find the currently selected song (for Now Playing bar)
 const currentSong = computed(() => {
-  if (!chartStore.playingTrackId || !chartStore.chartData?.songs) return null
+  if (!chartStore.selectedTrackId || !chartStore.chartData?.songs) return null
   
-  return chartStore.chartData.songs.find(song => 
-    song.position === chartStore.playingTrackId
+  console.log('🔍 Now Playing Debug:', {
+    selectedTrackId: chartStore.selectedTrackId,
+    totalSongs: chartStore.chartData?.songs?.length,
+    songPositions: chartStore.chartData?.songs?.map(s => s.position),
+    chartTitle: chartStore.chartData?.title
+  })
+  
+  const foundSong = chartStore.chartData.songs.find(song => 
+    song.position === chartStore.selectedTrackId
   )
+  
+  console.log('🎵 Found song:', foundSong ? {
+    position: foundSong.position,
+    name: foundSong.name,
+    artist: foundSong.artist
+  } : 'NOT FOUND')
+  
+  return foundSong
 })
 
-// Get progress for the currently playing song
+// Get progress for the currently selected song
 const progress = computed(() => {
-  if (!chartStore.playingTrackId) return 0
-  return chartStore.getAudioInfo(chartStore.playingTrackId).progress
+  if (!chartStore.selectedTrackId) return 0
+  return chartStore.getAudioInfo(chartStore.selectedTrackId).progress
 })
 
-const stopAudio = () => {
-  chartStore.stopCurrentAudio()
+const closeNowPlaying = () => {
+  chartStore.closeNowPlaying()
 }
 </script>

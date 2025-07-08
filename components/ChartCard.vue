@@ -9,7 +9,7 @@
       </div>
 
       <img
-        :src="song.image"
+        :src="song.apple_music?.artwork_url || song.image"
         :alt="`${song.name} cover`"
         class="w-16 h-16 rounded object-cover"
       />
@@ -64,7 +64,7 @@
         <!-- Audio Preview Controls -->
         <div
           v-if="song.apple_music?.preview_url"
-          class="flex flex-col items-center gap-2"
+          class="flex items-center"
         >
           <!-- Play/Pause Button -->
           <button
@@ -83,20 +83,6 @@
               :class="{ 'ml-1': !audioInfo.isPlaying }"
             />
           </button>
-
-          <!-- Progress Bar -->
-          <div class="w-16 h-1">
-            <div
-              v-if="audioInfo.isLastPlayed && audioInfo.progress > 0"
-              class="w-full h-full bg-gray-200 rounded-full overflow-hidden"
-            >
-              <div
-                class="h-full transition-all duration-100"
-                :class="audioInfo.isPlaying ? 'bg-blue-600' : 'bg-gray-400'"
-                :style="{ width: `${audioInfo.progress * 100}%` }"
-              />
-            </div>
-          </div>
         </div>
 
         <!-- No Preview Available -->
@@ -171,6 +157,11 @@ const positionChange = computed(() => {
 // Handle play/pause toggle
 const handlePlayToggle = () => {
   if (props.song.apple_music?.preview_url) {
+    console.log('🎵 Play button clicked for song:', {
+      position: props.song.position,
+      name: props.song.name,
+      artist: props.song.artist
+    })
     chartStore.playPreview(
       props.song.apple_music.preview_url,
       props.song.position

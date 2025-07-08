@@ -32,6 +32,14 @@ export const useCharts = () => {
         if (includeAppleMusic.value) params.append('apple_music', 'true')
 
         const response = await $fetch<ChartData>(`/api/charts/${chartId.value}?${params}`)
+        
+        // Log cache status in browser console
+        if (response.cached) {
+          console.log(`📊 Chart ${chartId.value} loaded from cache (${week?.value || 'current'} week)`)
+        } else {
+          console.log(`📊 Chart ${chartId.value} loaded from API (${week?.value || 'current'} week)`)
+        }
+        
         return response
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -53,7 +61,16 @@ export const useCharts = () => {
       queryFn: async () => {
         const params = new URLSearchParams()
         if (week) params.append('week', week)
-        return await $fetch<ChartData>(`/api/charts/${chartId}?${params}`)
+        const response = await $fetch<ChartData>(`/api/charts/${chartId}?${params}`)
+        
+        // Log cache status in browser console
+        if (response.cached) {
+          console.log(`📊 Chart ${chartId} prefetched from cache (${week || 'current'} week)`)
+        } else {
+          console.log(`📊 Chart ${chartId} prefetched from API (${week || 'current'} week)`)
+        }
+        
+        return response
       },
       staleTime: 5 * 60 * 1000
     })

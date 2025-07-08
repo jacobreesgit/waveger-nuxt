@@ -6,14 +6,34 @@
         class="text-blue-600 hover:text-blue-800 mb-4 inline-block"
         >← Back to Home</NuxtLink
       >
-      <h1 class="text-3xl font-bold mb-2">
-        {{ chartData?.title || formatChartName(chartId) }}
-      </h1>
-      <p class="text-gray-600" v-if="chartData">
-        Week of {{ chartData.week }}
-        <span v-if="chartData.cached" class="text-green-600 ml-2"
-          >• Cached</span
+      <div class="flex items-center justify-between mb-2">
+        <!-- Previous Week Button -->
+        <button
+          @click="goToPreviousWeek"
+          class="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+          title="Previous week"
         >
+          <Icon name="heroicons:chevron-left-20-solid" class="w-5 h-5" />
+        </button>
+
+        <!-- Chart Title -->
+        <h1 class="text-3xl font-bold text-center">
+          {{ chartData?.title || formatChartName(chartId) }}
+        </h1>
+
+        <!-- Next Week Button -->
+        <button
+          @click="goToNextWeek"
+          :disabled="isCurrentWeek"
+          class="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors disabled:text-gray-300 disabled:hover:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+          title="Next week"
+        >
+          <Icon name="heroicons:chevron-right-20-solid" class="w-5 h-5" />
+        </button>
+      </div>
+      
+      <p class="text-gray-600 text-center" v-if="chartData">
+        Week of {{ chartData.week }}
       </p>
     </div>
 
@@ -73,6 +93,10 @@ const chartId = computed(() => {
   const id = route.params.id;
   return Array.isArray(id) ? id[0] : String(id);
 });
+
+// Chart store for week navigation
+const chartStore = useChartStore()
+const { isCurrentWeek, goToPreviousWeek, goToNextWeek } = chartStore
 
 const { useChartQuery } = useCharts();
 const { data: chartData, isLoading, error, refetch } = useChartQuery(chartId, {

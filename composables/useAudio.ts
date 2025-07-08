@@ -4,6 +4,7 @@ export const useAudio = () => {
   const sounds = ref<Record<number, Howl>>({})
   const playingTrackId = ref<number | null>(null)
   const lastPlayedTrackId = ref<number | null>(null)
+  const selectedTrackId = ref<number | null>(null) // Track shown in Now Playing bar
   const volume = ref(1.0) // Always 100% volume
   const audioProgress = ref<Record<number, number>>({})
 
@@ -17,6 +18,9 @@ export const useAudio = () => {
       // Don't reset progress when pausing - keep current position
       lastPlayedTrackId.value = currentTrackId
       playingTrackId.value = null
+      // Keep selected track for Now Playing bar
+      selectedTrackId.value = currentTrackId
+      console.log('⏸️ Paused audio, selectedTrackId kept as:', currentTrackId)
     }
   }
 
@@ -27,6 +31,14 @@ export const useAudio = () => {
       audioProgress.value[currentTrackId] = 0
       lastPlayedTrackId.value = null // Clear last played when stopping completely
       playingTrackId.value = null
+    }
+  }
+
+  const closeNowPlaying = () => {
+    // Close Now Playing bar completely
+    selectedTrackId.value = null
+    if (playingTrackId.value !== null) {
+      stopCurrentAudio()
     }
   }
 
@@ -60,6 +72,8 @@ export const useAudio = () => {
             console.log('Howl onplay fired for track:', trackId)
             playingTrackId.value = trackId
             lastPlayedTrackId.value = trackId
+            selectedTrackId.value = trackId // Show in Now Playing bar
+            console.log('🎯 selectedTrackId set to:', trackId)
             audioProgress.value[trackId] = 0
             updateProgress(trackId)
           },
@@ -132,10 +146,12 @@ export const useAudio = () => {
 
   return {
     playingTrackId: readonly(playingTrackId),
+    selectedTrackId: readonly(selectedTrackId),
     playPreview,
     getAudioInfo,
     stopCurrentAudio,
     pauseCurrentAudio,
+    closeNowPlaying,
     isAudioSupported: readonly(isAudioSupported)
   }
 }

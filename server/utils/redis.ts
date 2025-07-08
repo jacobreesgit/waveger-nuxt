@@ -17,7 +17,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   try {
     const redis = getRedisClient()
     const cached = await redis.get(key)
-    return cached ? JSON.parse(cached as string) : null
+    return cached as T | null
   } catch (error) {
     console.error('Cache get error:', error)
     return null
@@ -27,7 +27,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 export async function cacheSet(key: string, value: any, ttl: number = 3600): Promise<void> {
   try {
     const redis = getRedisClient()
-    await redis.set(key, JSON.stringify(value), { ex: ttl })
+    await redis.set(key, value, { ex: ttl })
   } catch (error) {
     console.error('Cache set error:', error)
   }

@@ -5,7 +5,7 @@ export const useChartStore = defineStore('chart', () => {
   const favorites = useLocalStorage<number[]>('waveger-favorites', [])
 
   // Audio management
-  const { playingTrackId, playPreview, getAudioInfo, stopCurrentAudio, pauseCurrentAudio } = useAudio()
+  const { playingTrackId, selectedTrackId, playPreview, getAudioInfo, stopCurrentAudio, pauseCurrentAudio, closeNowPlaying } = useAudio()
 
   // Chart data with TanStack Query
   const { useChartQuery, prefetchChart } = useCharts()
@@ -15,17 +15,39 @@ export const useChartStore = defineStore('chart', () => {
   })
 
   // Computed properties
-  const chartData = computed(() => chartQuery.data.value)
+  const chartData = computed(() => {
+    const data = chartQuery.data.value
+    if (data) {
+      console.log('📊 Chart data updated:', {
+        title: data.title,
+        songCount: data.songs?.length,
+        firstSong: data.songs?.[0] ? {
+          position: data.songs[0].position,
+          name: data.songs[0].name,
+          artist: data.songs[0].artist
+        } : null
+      })
+    }
+    return data
+  })
   const isLoading = computed(() => chartQuery.isLoading.value)
   const error = computed(() => chartQuery.error.value)
 
   // Actions
   const changeChart = (id: string) => {
     selectedChartId.value = id
+    // Clear audio state when changing charts
+    stopCurrentAudio()
+    closeNowPlaying()
+    console.log('📊 Chart changed to:', id, '- Audio state cleared')
   }
 
   const setDate = (date: string) => {
     selectedDate.value = date
+    // Clear audio state when changing dates
+    stopCurrentAudio()
+    closeNowPlaying()
+    console.log('📅 Date changed to:', date, '- Audio state cleared')
   }
 
   const setToday = () => {
@@ -43,6 +65,32 @@ export const useChartStore = defineStore('chart', () => {
 
   const isFavorite = (position: number) => favorites.value.includes(position)
 
+  // Week navigation functionality
+  const isCurrentWeek = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return selectedDate.value === today
+  })
+
+  const goToPreviousWeek = () => {
+    const currentDate = new Date(selectedDate.value)
+    currentDate.setDate(currentDate.getDate() - 7)
+    selectedDate.value = currentDate.toISOString().split('T')[0]
+  }
+
+  const goToNextWeek = () => {
+    if (!isCurrentWeek.value) {
+      const currentDate = new Date(selectedDate.value)
+      currentDate.setDate(currentDate.getDate() + 7)
+      const newDate = currentDate.toISOString().split('T')[0]
+      const today = new Date().toISOString().split('T')[0]
+      
+      // Don't go beyond current week
+      if (newDate <= today) {
+        selectedDate.value = newDate
+      }
+    }
+  }
+
   return {
     // State
     selectedChartId,
@@ -56,10 +104,12 @@ export const useChartStore = defineStore('chart', () => {
     
     // Audio
     playingTrackId,
+    selectedTrackId,
     playPreview,
     getAudioInfo,
     stopCurrentAudio,
     pauseCurrentAudio,
+    closeNowPlaying,
     
     // Actions
     changeChart,
@@ -67,6 +117,11 @@ export const useChartStore = defineStore('chart', () => {
     setToday,
     toggleFavorite,
     isFavorite,
-    prefetchChart
+    prefetchChart,
+    
+    // Week navigation
+    isCurrentWeek,
+    goToPreviousWeek,
+    goToNextWeek
   }
 })
