@@ -1,4 +1,5 @@
 import { generateAppleMusicToken } from '~/server/utils/appleMusic'
+import { checkDatabaseHealth } from '~/server/database/connection'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -11,12 +12,25 @@ export default defineEventHandler(async (event) => {
     uptime: process.uptime(),
     memory: process.memoryUsage(),
     services: {
+      database: { status: 'unknown', latency: 0, error: null as string | null },
       redis: { status: 'unknown', latency: 0, error: null as string | null },
       billboard: { status: 'unknown', latency: 0, error: null as string | null },
       appleMusic: { status: 'unknown', latency: 0, error: null as string | null }
     },
     version: '1.0.0',
     responseTime: 0
+  }
+
+  // Detailed Database health check
+  try {
+    const dbHealthResult = await checkDatabaseHealth()
+    health.services.database = dbHealthResult
+  } catch (error) {
+    health.services.database = {
+      status: 'unhealthy',
+      latency: 0,
+      error: error instanceof Error ? error.message : 'Unknown database error'
+    }
   }
 
   // Detailed Redis health check
@@ -145,7 +159,7 @@ export default defineEventHandler(async (event) => {
 
   // Calculate overall system status
   const _serviceStatuses = Object.values(health.services).map(service => service.status)
-  const criticalServices = [health.services.redis.status, health.services.billboard.status]
+  const criticalServices = [health.services.database.status, health.services.redis.status, health.services.billboard.status]
   
   if (criticalServices.every(status => status === 'healthy')) {
     health.status = 'healthy'

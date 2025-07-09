@@ -39,6 +39,7 @@ Edit `.env` with your actual credentials:
 ```bash
 # Required API Keys
 NUXT_RAPID_API_KEY=your_rapidapi_key_here
+DATABASE_URL=postgresql://username:password@host:port/database
 NUXT_REDIS_URL=redis://default:your_password@your_host:6379
 NUXT_APPLE_MUSIC_KEY_ID=your_key_id_here
 NUXT_APPLE_MUSIC_TEAM_ID=your_team_id_here
@@ -52,6 +53,7 @@ NUXT_PUBLIC_SITE_URL=http://localhost:3000
 
 **Where to get credentials:**
 - **RapidAPI Key**: Sign up at [RapidAPI](https://rapidapi.com/marketplace) and subscribe to the Billboard API
+- **Database**: PostgreSQL database (e.g., [Render](https://render.com/), [Supabase](https://supabase.com/), or [Railway](https://railway.app/))
 - **Redis**: Create a database at [Upstash](https://upstash.com/) and get your Redis URL
 - **Apple Music**: Set up MusicKit at [Apple Developer Console](https://developer.apple.com/documentation/applemusicapi/getting_keys_and_creating_tokens)
 
@@ -60,6 +62,27 @@ NUXT_PUBLIC_SITE_URL=http://localhost:3000
 ```bash
 npm install
 ```
+
+### 3. Database Setup
+
+The application uses PostgreSQL with Drizzle ORM. After setting up your database credentials:
+
+```bash
+# Generate database schema
+npm run db:generate
+
+# Push schema to database (creates tables)
+npm run db:push
+
+# OR use migration files (recommended for production)
+npm run db:migrate
+```
+
+**Database Commands:**
+- `npm run db:generate` - Generate migration files from schema
+- `npm run db:push` - Push schema directly to database
+- `npm run db:migrate` - Run migration files
+- `npm run db:studio` - Open Drizzle Studio (database GUI)
 
 ## Development
 
@@ -272,6 +295,28 @@ Waveger uses a secure environment variable system with validation powered by Zod
 - `utils/env.ts` - Environment validation schema
 - `nuxt.config.ts` - Loads validated environment variables
 
+### Database Architecture
+
+**Database Layer:**
+- **ORM**: Drizzle ORM with PostgreSQL
+- **Connection**: Connection pooling with automatic reconnection
+- **Schema**: Type-safe database schema definitions
+- **Migrations**: Version-controlled database migrations
+- **Health Checks**: Real-time database connectivity monitoring
+
+**Database Tables:**
+- `users` - User account information
+- `favorite_songs` - User's favorite tracks from charts
+- `user_sessions` - Authentication sessions
+- `chart_snapshots` - Historical chart data for caching
+
+**Key Features:**
+- Automatic connection pooling and reconnection
+- Type-safe queries with Drizzle ORM
+- Migration system for schema changes
+- Health monitoring integration
+- Backwards compatibility with localStorage
+
 ### Production Deployment
 
 For production environments, set these environment variables in your hosting platform:
@@ -279,6 +324,7 @@ For production environments, set these environment variables in your hosting pla
 ```bash
 NODE_ENV=production
 NUXT_RAPID_API_KEY=your_production_rapidapi_key
+DATABASE_URL=your_production_postgresql_url
 NUXT_REDIS_URL=your_production_redis_url
 NUXT_APPLE_MUSIC_KEY_ID=your_production_key_id
 NUXT_APPLE_MUSIC_TEAM_ID=your_production_team_id

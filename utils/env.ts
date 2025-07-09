@@ -7,6 +7,9 @@ const envSchema = z.object({
   // API Keys
   NUXT_RAPID_API_KEY: z.string().min(1, 'RapidAPI key is required'),
   
+  // Database Configuration
+  DATABASE_URL: z.string().url('Database URL must be a valid PostgreSQL URL'),
+  
   // Redis Configuration
   NUXT_REDIS_URL: z.string().url('Redis URL must be a valid URL'),
   

@@ -2,7 +2,24 @@ export const useChartStore = defineStore('chart', () => {
   // Persistent state with VueUse
   const selectedChartId = useLocalStorage('waveger-chart-id', 'hot-100')
   const selectedDate = useLocalStorage('waveger-date', new Date().toISOString().split('T')[0])
-  const favorites = useLocalStorage<number[]>('waveger-favorites', [])
+  const localFavorites = useLocalStorage<number[]>('waveger-favorites', [])
+  
+  // Database-backed favorites
+  const { favorites: dbFavorites, loadFavorites, toggleFavorite: dbToggleFavorite, isFavorite: dbIsFavorite } = useFavorites()
+  
+  // Computed favorites that combines local and database favorites
+  const favorites = computed(() => {
+    // Combine local favorites with database favorites
+    const combined = [...localFavorites.value, ...dbFavorites.value]
+    return [...new Set(combined)] // Remove duplicates
+  })
+  
+  // Load favorites when chart changes
+  watchEffect(() => {
+    if (selectedChartId.value) {
+      loadFavorites(selectedChartId.value)
+    }
+  })
   
   // Filter state
   const filters = ref({
@@ -127,12 +144,30 @@ export const useChartStore = defineStore('chart', () => {
     selectedDate.value = new Date().toISOString().split('T')[0]
   }
 
-  const toggleFavorite = (position: number) => {
-    const index = favorites.value.indexOf(position)
-    if (index > -1) {
-      favorites.value.splice(index, 1)
-    } else {
-      favorites.value.push(position)
+  const toggleFavorite = async (position: number) => {
+    const song = chartData.value?.songs?.find(s => s.position === position)
+    if (!song) return
+    
+    try {
+      // Toggle in database
+      await dbToggleFavorite(position, selectedChartId.value, song.name, song.artist)
+      
+      // Also update local storage for backwards compatibility
+      const index = localFavorites.value.indexOf(position)
+      if (index > -1) {
+        localFavorites.value.splice(index, 1)
+      } else {
+        localFavorites.value.push(position)
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+      // Fallback to local storage only
+      const index = localFavorites.value.indexOf(position)
+      if (index > -1) {
+        localFavorites.value.splice(index, 1)
+      } else {
+        localFavorites.value.push(position)
+      }
     }
   }
 
