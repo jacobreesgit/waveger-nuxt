@@ -1,6 +1,6 @@
 <template>
   <div
-    class="p-6 bg-white rounded-lg hover:bg-gray-800 hover:text-white transition-all duration-300 ease-in-out"
+    class="group p-6 bg-white rounded-lg hover:bg-gray-800 hover:text-white transition-all duration-300 ease-in-out"
     :data-song-position="song.position"
   >
     <div class="flex items-center gap-4">
@@ -12,7 +12,7 @@
         :src="song.apple_music?.artwork_url || song.image"
         :alt="`${song.name} cover`"
         class="w-16 h-16 rounded object-cover"
-      >
+      />
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
@@ -42,11 +42,11 @@
       <div class="flex-shrink-0 flex items-center gap-3">
         <!-- Favorite Button -->
         <button
-          class="w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer"
+          class="w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer group-hover:text-white"
           :class="
             isFavorite
-              ? 'text-red-500 hover:text-red-600'
-              : 'text-gray-400 hover:text-gray-600'
+              ? 'text-red-500 hover:text-red-600 group-hover:text-red-400 group-hover:hover:text-red-300'
+              : 'text-gray-400 hover:text-gray-600 group-hover:text-white group-hover:hover:text-gray-300'
           "
           :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
           @click="toggleFavorite"
@@ -62,13 +62,13 @@
         </button>
 
         <!-- Audio Preview Controls -->
-        <div
-          v-if="song.apple_music?.preview_url"
-          class="flex items-center"
-        >
+        <div v-if="song.apple_music?.preview_url" class="flex items-center">
           <!-- Play/Pause Button -->
           <button
-            class="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors cursor-pointer"
+            class="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-gray-400"
+            :class="
+              audioInfo.isSupported ? 'cursor-pointer' : 'cursor-not-allowed'
+            "
             :disabled="!audioInfo.isSupported"
             :title="audioInfo.isPlaying ? 'Pause preview' : 'Play preview'"
             @click="handlePlayToggle"
@@ -80,7 +80,6 @@
                   : 'heroicons:play-20-solid'
               "
               class="w-5 h-5"
-              :class="{ 'ml-1': !audioInfo.isPlaying }"
             />
           </button>
         </div>
@@ -106,62 +105,62 @@ const chartStore = useChartStore();
 const audioInfo = computed(() => chartStore.getAudioInfo(props.song.position));
 
 // Favorites functionality
-const isFavorite = computed(() => chartStore.isFavorite(props.song.position))
+const isFavorite = computed(() => chartStore.isFavorite(props.song.position));
 
 // Position change calculation
 const positionChange = computed(() => {
-  const current = props.song.position
-  const lastWeek = props.song.last_week_position
+  const current = props.song.position;
+  const lastWeek = props.song.last_week_position;
 
   // New song (no previous position)
   if (lastWeek === 0) {
     return {
       show: true,
-      icon: 'heroicons:star-20-solid',
-      text: 'NEW',
-      colorClass: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-    }
+      icon: "heroicons:star-20-solid",
+      text: "NEW",
+      colorClass: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
+    };
   }
 
   // Position went up (lower number = higher rank)
   if (lastWeek > current) {
-    const change = lastWeek - current
+    const change = lastWeek - current;
     return {
       show: true,
-      icon: 'heroicons:arrow-up-20-solid',
+      icon: "heroicons:arrow-up-20-solid",
       text: `${change}`,
-      colorClass: 'bg-green-100 text-green-800 hover:bg-green-200'
-    }
+      colorClass: "bg-green-100 text-green-800 hover:bg-green-200",
+    };
   }
 
   // Position went down (higher number = lower rank)
   if (lastWeek < current) {
-    const change = current - lastWeek
+    const change = current - lastWeek;
     return {
       show: true,
-      icon: 'heroicons:arrow-down-20-solid',
+      icon: "heroicons:arrow-down-20-solid",
       text: `${change}`,
-      colorClass: 'bg-red-100 text-red-800 hover:bg-red-200'
-    }
+      colorClass: "bg-red-100 text-red-800 hover:bg-red-200",
+    };
   }
 
   // No change - don't show indicator
   return {
     show: false,
-    icon: '',
-    text: '',
-    colorClass: ''
-  }
+    icon: "",
+    text: "",
+    colorClass: "",
+  };
 });
 
 // Handle play/pause toggle
 const handlePlayToggle = () => {
   if (props.song.apple_music?.preview_url) {
-    console.log('🎵 Play button clicked for song:', {
+    console.log("🎵 Play button clicked for song:", {
       position: props.song.position,
       name: props.song.name,
-      artist: props.song.artist
-    })
+      artist: props.song.artist,
+    });
     chartStore.playPreview(
       props.song.apple_music.preview_url,
       props.song.position

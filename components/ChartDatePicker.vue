@@ -6,7 +6,6 @@
       variant="ghost"
       size="sm"
       :disabled="isLoading"
-      class="cursor-pointer"
       @click="goToPreviousWeek"
     >
       Previous
@@ -20,7 +19,7 @@
         variant="outline"
         size="sm"
         :disabled="isLoading"
-        class="cursor-pointer min-w-[140px]"
+        class="min-w-[140px]"
       />
       
       <template #content>
@@ -42,7 +41,6 @@
       variant="ghost"
       size="sm"
       :disabled="isCurrentWeek || isLoading"
-      class="cursor-pointer"
       @click="goToNextWeek"
     >
       Next
@@ -54,7 +52,6 @@
       variant="solid"
       size="sm"
       :disabled="isLoading"
-      class="cursor-pointer"
       @click="goToToday"
     >
       Today
