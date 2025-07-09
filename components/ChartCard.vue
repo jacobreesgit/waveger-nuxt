@@ -12,7 +12,7 @@
         :src="song.apple_music?.artwork_url || song.image"
         :alt="`${song.name} cover`"
         class="w-16 h-16 rounded object-cover"
-      />
+      >
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">

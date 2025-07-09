@@ -3,6 +3,16 @@ export const useChartStore = defineStore('chart', () => {
   const selectedChartId = useLocalStorage('waveger-chart-id', 'hot-100')
   const selectedDate = useLocalStorage('waveger-date', new Date().toISOString().split('T')[0])
   const favorites = useLocalStorage<number[]>('waveger-favorites', [])
+  
+  // Filter state
+  const filters = ref({
+    showFavoritesOnly: false,
+    showNewSongsOnly: false,
+    positionRange: 'all',
+    weeksRange: 'all',
+    sortBy: 'position',
+    sortOrder: 'asc' as 'asc' | 'desc'
+  })
 
   // Audio management
   const { playingTrackId, selectedTrackId, playPreview, getAudioInfo, stopCurrentAudio, pauseCurrentAudio, closeNowPlaying } = useAudio()
@@ -29,6 +39,69 @@ export const useChartStore = defineStore('chart', () => {
       })
     }
     return data
+  })
+
+  // Filtered songs based on current filters
+  const filteredSongs = computed(() => {
+    if (!chartData.value?.songs) return []
+    
+    let songs = [...chartData.value.songs]
+    
+    // Apply favorites filter
+    if (filters.value.showFavoritesOnly) {
+      songs = songs.filter(song => favorites.value.includes(song.position))
+    }
+    
+    // Apply new songs filter
+    if (filters.value.showNewSongsOnly) {
+      songs = songs.filter(song => song.last_week_position === 0)
+    }
+    
+    // Apply position range filter
+    if (filters.value.positionRange !== 'all') {
+      const [min, max] = filters.value.positionRange.split('-').map(Number)
+      songs = songs.filter(song => song.position >= min && song.position <= max)
+    }
+    
+    // Apply weeks on chart filter
+    if (filters.value.weeksRange !== 'all') {
+      const weeksRange = filters.value.weeksRange
+      
+      if (weeksRange === '1') {
+        songs = songs.filter(song => song.weeks_on_chart === 1)
+      } else if (weeksRange === '21+') {
+        songs = songs.filter(song => song.weeks_on_chart >= 21)
+      } else if (weeksRange.includes('-')) {
+        const [min, max] = weeksRange.split('-').map(Number)
+        songs = songs.filter(song => song.weeks_on_chart >= min && song.weeks_on_chart <= max)
+      }
+    }
+    
+    // Apply sorting
+    const sortBy = filters.value.sortBy
+    const sortOrder = filters.value.sortOrder
+    
+    songs.sort((a, b) => {
+      let comparison = 0
+      
+      switch (sortBy) {
+        case 'position':
+          comparison = a.position - b.position
+          break
+        case 'alphabetical':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'weeks':
+          comparison = a.weeks_on_chart - b.weeks_on_chart
+          break
+        default:
+          comparison = a.position - b.position
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
+    
+    return songs
   })
   const isLoading = computed(() => chartQuery.isLoading.value)
   const error = computed(() => chartQuery.error.value)
@@ -65,6 +138,29 @@ export const useChartStore = defineStore('chart', () => {
 
   const isFavorite = (position: number) => favorites.value.includes(position)
 
+  // Filter actions
+  const updateFilters = (newFilters: {
+    showFavoritesOnly: boolean;
+    showNewSongsOnly: boolean;
+    positionRange: string;
+    weeksRange: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  }) => {
+    filters.value = { ...newFilters }
+  }
+
+  const clearFilters = () => {
+    filters.value = {
+      showFavoritesOnly: false,
+      showNewSongsOnly: false,
+      positionRange: 'all',
+      weeksRange: 'all',
+      sortBy: 'position',
+      sortOrder: 'asc'
+    }
+  }
+
   // Week navigation functionality
   const isCurrentWeek = computed(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -99,9 +195,11 @@ export const useChartStore = defineStore('chart', () => {
     selectedChartId,
     selectedDate,
     favorites,
+    filters,
     
     // Computed
     chartData,
+    filteredSongs,
     isLoading,
     error,
     
@@ -121,6 +219,10 @@ export const useChartStore = defineStore('chart', () => {
     toggleFavorite,
     isFavorite,
     prefetchChart,
+    
+    // Filter actions
+    updateFilters,
+    clearFilters,
     
     // Week navigation
     isCurrentWeek,

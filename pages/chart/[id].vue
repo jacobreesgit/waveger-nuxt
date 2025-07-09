@@ -23,12 +23,21 @@
       </div>
 
       <!-- Search Bar -->
-      <div v-if="chartData?.songs" class="mb-8">
+      <div v-if="chartData?.songs" class="mb-6">
         <SearchBar
           :songs="chartData.songs"
           @search="handleSearch"
           @select="handleSongSelect"
           @clear="handleSearchClear"
+        />
+      </div>
+
+      <!-- Filter Toggles -->
+      <div v-if="chartData?.songs && !isSearchActive">
+        <ChartFilters
+          :songs="chartData.songs"
+          :filtered-count="displayedSongs.length"
+          @filters-changed="handleFiltersChanged"
         />
       </div>
 
@@ -116,17 +125,18 @@ const isSearchActive = ref(false);
 const displayedSongs = computed(() => {
   if (!chartData.value?.songs) return [];
 
-  if (!isSearchActive.value || !searchQuery.value.trim()) {
-    return chartData.value.songs;
+  // If search is active, use search results
+  if (isSearchActive.value && searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim();
+    return chartData.value.songs.filter(
+      (song: Song) =>
+        song.name.toLowerCase().includes(query) ||
+        song.artist.toLowerCase().includes(query)
+    );
   }
 
-  // Filter songs based on search query
-  const query = searchQuery.value.toLowerCase().trim();
-  return chartData.value.songs.filter(
-    (song: Song) =>
-      song.name.toLowerCase().includes(query) ||
-      song.artist.toLowerCase().includes(query)
-  );
+  // Otherwise use filtered songs from store
+  return chartStore.filteredSongs;
 });
 
 // Search handlers
@@ -150,6 +160,18 @@ const handleSongSelect = (song: Song) => {
 const handleSearchClear = () => {
   searchQuery.value = "";
   isSearchActive.value = false;
+};
+
+// Filter handlers
+const handleFiltersChanged = (filters: {
+  showFavoritesOnly: boolean;
+  showNewSongsOnly: boolean;
+  positionRange: string;
+  weeksRange: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}) => {
+  chartStore.updateFilters(filters);
 };
 
 const formatChartName = (id: string) => {
