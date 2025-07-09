@@ -26,7 +26,36 @@ A modern music charts explorer with real-time data and audio previews. Built wit
 
 ## Setup
 
-Install dependencies:
+### 1. Environment Configuration
+
+Copy the example environment file and configure your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your actual credentials:
+
+```bash
+# Required API Keys
+NUXT_RAPID_API_KEY=your_rapidapi_key_here
+NUXT_REDIS_URL=redis://default:your_password@your_host:6379
+NUXT_APPLE_MUSIC_KEY_ID=your_key_id_here
+NUXT_APPLE_MUSIC_TEAM_ID=your_team_id_here
+NUXT_APPLE_MUSIC_AUTH_KEY="-----BEGIN PRIVATE KEY-----
+your_private_key_here
+-----END PRIVATE KEY-----"
+
+# Optional Configuration
+NUXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+**Where to get credentials:**
+- **RapidAPI Key**: Sign up at [RapidAPI](https://rapidapi.com/marketplace) and subscribe to the Billboard API
+- **Redis**: Create a database at [Upstash](https://upstash.com/) and get your Redis URL
+- **Apple Music**: Set up MusicKit at [Apple Developer Console](https://developer.apple.com/documentation/applemusicapi/getting_keys_and_creating_tokens)
+
+### 2. Install Dependencies
 
 ```bash
 npm install
@@ -223,21 +252,38 @@ All API endpoints implement multi-layer caching:
 
 ## Configuration
 
-API credentials and Redis connection are configured in `nuxt.config.ts`. For production, these should be moved to environment variables.
+### Environment Variables
 
-### Required Environment Variables
+Waveger uses a secure environment variable system with validation powered by Zod. All sensitive configuration is loaded from environment variables at build time.
+
+**Environment Validation:**
+- All required environment variables are validated using Zod schemas
+- The application will fail to start if any required variables are missing or invalid
+- Environment validation occurs in `utils/env.ts`
+
+**Security Features:**
+- No hardcoded secrets in the codebase
+- Runtime validation ensures all environment variables are properly formatted
+- Separate validation for server-side and client-side variables
+
+**Configuration Files:**
+- `.env` - Your actual environment variables (never commit this file)
+- `.env.example` - Template with all required variables
+- `utils/env.ts` - Environment validation schema
+- `nuxt.config.ts` - Loads validated environment variables
+
+### Production Deployment
+
+For production environments, set these environment variables in your hosting platform:
 
 ```bash
-# Billboard API
-RAPID_API_KEY=your_rapid_api_key
-
-# Redis
-REDIS_URL=redis://your_redis_url
-
-# Apple Music
-APPLE_MUSIC_KEY_ID=your_key_id
-APPLE_MUSIC_TEAM_ID=your_team_id
-APPLE_MUSIC_AUTH_KEY=your_private_key
+NODE_ENV=production
+NUXT_RAPID_API_KEY=your_production_rapidapi_key
+NUXT_REDIS_URL=your_production_redis_url
+NUXT_APPLE_MUSIC_KEY_ID=your_production_key_id
+NUXT_APPLE_MUSIC_TEAM_ID=your_production_team_id
+NUXT_APPLE_MUSIC_AUTH_KEY=your_production_private_key
+NUXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
 ## License

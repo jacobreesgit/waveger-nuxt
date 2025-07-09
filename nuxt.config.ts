@@ -1,3 +1,8 @@
+import { validateEnv } from './utils/env'
+
+// Validate environment variables at build time
+const env = validateEnv()
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-04',
   devtools: { enabled: false },
@@ -19,21 +24,16 @@ export default defineNuxtConfig({
   },
   
   runtimeConfig: {
-    // Private (server-side only) - your real credentials
-    rapidApiKey: 'e07425d972msh24a5be687176d40p1b01b6jsn4425e49aba7a',
-    redisUrl: 'redis://default:AdinAAIjcDFmYTM3OTM0Y2I1ZmI0NmNkODkyMWM4ODBlYjA2MWQwN7AxMA@premium-humpback-55463.upstash.io:6379',
-    appleMusicKeyId: '2H884KN5CZ',
-    appleMusicTeamId: '5RP4WRQ9V2',
-    appleMusicAuthKey: `-----BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgi0Gm6sOeQWwoC76t
-lTQmS9bIJhSoZJFKhBw1qjDueEegCgYIKoZIzj0DAQehRANCAAQPVy5Hb82C5mlz
-An+C9pm+ZBuMpzstnCVW6NoTEJpcP9cyRjnDS2SfDF7xC3X8Wzwfc6LOVXCzHk7T
-o5xk98gT
------END PRIVATE KEY-----`,
+    // Private (server-side only) - loaded from environment variables
+    rapidApiKey: env.NUXT_RAPID_API_KEY,
+    redisUrl: env.NUXT_REDIS_URL,
+    appleMusicKeyId: env.NUXT_APPLE_MUSIC_KEY_ID,
+    appleMusicTeamId: env.NUXT_APPLE_MUSIC_TEAM_ID,
+    appleMusicAuthKey: env.NUXT_APPLE_MUSIC_AUTH_KEY,
     
     // Public (client-side)
     public: {
-      siteUrl: 'http://localhost:3000'
+      siteUrl: env.NUXT_PUBLIC_SITE_URL
     }
   },
   
@@ -59,7 +59,7 @@ o5xk98gT
     storage: {
       redis: {
         driver: 'redis',
-        connectionString: 'redis://default:AdinAAIjcDFmYTM3OTM0Y2I1ZmI0NmNkODkyMWM4ODBlYjA2MWQwN7AxMA@premium-humpback-55463.upstash.io:6379'
+        connectionString: env.NUXT_REDIS_URL
       }
     }
   },
