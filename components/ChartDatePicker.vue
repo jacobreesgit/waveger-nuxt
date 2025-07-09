@@ -21,14 +21,17 @@
         :disabled="isLoading"
         class="min-w-[140px]"
       />
-      
+
       <template #content>
-        <div class="p-4">
+        <div class="p-4 bg-white">
           <UCalendar
             v-model="selectedCalendarDate"
             :max-date="maxDate"
             :min-date="minDate"
             :is-date-disabled="isDateDisabled"
+            color="primary"
+            size="sm"
+            class="w-full"
             @update:model-value="handleDateChange"
           />
         </div>
@@ -41,6 +44,7 @@
       variant="ghost"
       size="sm"
       :disabled="isCurrentWeek || isLoading"
+      :class="{ 'opacity-50': isCurrentWeek || isLoading }"
       @click="goToNextWeek"
     >
       Next
@@ -60,84 +64,89 @@
 </template>
 
 <script setup lang="ts">
-import { format, parseISO } from 'date-fns'
-import type { CalendarDate } from '@internationalized/date'
-import { parseDate } from '@internationalized/date'
+import { format, parseISO } from "date-fns";
+import type { CalendarDate } from "@internationalized/date";
+import { parseDate } from "@internationalized/date";
 
-const chartStore = useChartStore()
+const chartStore = useChartStore();
 
 // Props
 interface Props {
-  isLoading?: boolean
+  isLoading?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
-  isLoading: false
-})
+  isLoading: false,
+});
 
 // Reactive store values
-const { selectedDate, isCurrentWeek } = storeToRefs(chartStore)
+const { selectedDate, isCurrentWeek } = storeToRefs(chartStore);
 
 // Convert string date to CalendarDate for the calendar component
 const selectedCalendarDate = computed({
   get: () => {
-    return parseDate(selectedDate.value)
+    return parseDate(selectedDate.value);
   },
   set: (_value: CalendarDate) => {
     // This will be handled by handleDateChange
-  }
-})
+  },
+});
 
 // Display formatted date
 const displayDate = computed(() => {
-  const date = parseISO(selectedDate.value)
-  return format(date, 'MMM d, yyyy')
-})
+  const date = parseISO(selectedDate.value);
+  return format(date, "MMM d, yyyy");
+});
 
 // Set reasonable date bounds
-const today = new Date()
-const maxDate = parseDate(today.toISOString().split('T')[0])
-const minDate = parseDate('2010-01-01') // Charts likely don't go back before 2010
+const today = new Date();
+const maxDate = parseDate(today.toISOString().split("T")[0]);
+const minDate = parseDate("2010-01-01"); // Charts likely don't go back before 2010
 
 // Handle date selection from calendar
 const handleDateChange = (date: unknown) => {
-  if (date && !Array.isArray(date) && typeof date === 'object' && 'toString' in date) {
-    const dateString = (date as { toString(): string }).toString()
-    chartStore.setDate(dateString)
+  if (
+    date &&
+    !Array.isArray(date) &&
+    typeof date === "object" &&
+    "toString" in date
+  ) {
+    const dateString = (date as { toString(): string }).toString();
+    chartStore.setDate(dateString);
   }
-}
+};
 
 // Check if a date should be disabled
 const isDateDisabled = (date: unknown) => {
-  if (!date || typeof date !== 'object' || !('toString' in date)) return true
-  
-  const dateString = (date as { toString(): string }).toString()
-  const selectedDateObj = parseISO(dateString)
-  
+  if (!date || typeof date !== "object" || !("toString" in date)) return true;
+
+  const dateString = (date as { toString(): string }).toString();
+  const selectedDateObj = parseISO(dateString);
+
   // Disable future dates
   if (selectedDateObj > today) {
-    return true
+    return true;
   }
-  
+
   // Disable dates that are too far in the past
-  const minDateObj = parseISO(minDate.toString())
+  const minDateObj = parseISO(minDate.toString());
   if (selectedDateObj < minDateObj) {
-    return true
+    return true;
   }
-  
-  return false
-}
+
+  return false;
+};
 
 // Navigation methods
 const goToPreviousWeek = () => {
-  chartStore.goToPreviousWeek()
-}
+  chartStore.goToPreviousWeek();
+};
 
 const goToNextWeek = () => {
-  chartStore.goToNextWeek()
-}
+  chartStore.goToNextWeek();
+};
 
 const goToToday = () => {
-  chartStore.setToday()
-}
+  chartStore.setToday();
+};
 </script>
