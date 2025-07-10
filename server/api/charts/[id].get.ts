@@ -1,11 +1,10 @@
 import { z } from 'zod'
-import { createBillboardResponseSchema, CHART_CONFIG, CHART_TYPES } from '~/types'
-import { CACHE_KEYS, CACHE_TTL } from '~/utils/constants'
+import { getBillboardClient } from '~/server/utils/billboardClient'
 import { enrichWithAppleMusic } from '~/server/utils/appleMusic'
 
 // Input validation schema
 const QuerySchema = z.object({
-  week: z.string().optional(),
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   refresh: z.string().transform(val => val === 'true').optional(),
   apple_music: z.string().optional()
 })
@@ -18,7 +17,8 @@ export default defineEventHandler(async (event) => {
   if (!queryResult.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid query parameters'
+      statusMessage: 'Invalid query parameters',
+      data: queryResult.error.issues
     })
   }
   
@@ -26,121 +26,82 @@ export default defineEventHandler(async (event) => {
   
   // Enable Apple Music by default, disable only if explicitly set to 'false'
   const includeAppleMusic = apple_music !== 'false'
-  
-  // Create cache key
-  const cacheKey = `${CACHE_KEYS.CHART}:${chartId}:${week || 'current'}:${includeAppleMusic ? 'enriched' : 'basic'}`
-
-  // Check cache first (unless refresh requested)
-  if (!refresh) {
-    const cached = await cacheGet(cacheKey)
-    if (cached) {
-      console.log(`📊 Chart ${chartId} served from cache (${week || 'current'} week)`)
-      return { ...cached, cached: true }
-    }
-  }
 
   try {
-    // Fetch from Billboard API
-    let data = await fetchBillboardChart(chartId, week)
+    // Get the robust Billboard client
+    const billboardClient = getBillboardClient()
+    
+    // Fetch chart data with comprehensive error handling
+    const result = await billboardClient.fetchChartWithFallback(chartId, {
+      week,
+      refresh,
+      timeout: 20000 // 20 second timeout
+    })
 
-    // Validate response using chart-specific schema
-    const schema = createBillboardResponseSchema(chartId)
-    const validationResult = schema.safeParse(data)
-    if (!validationResult.success) {
-      console.error(`Billboard API validation error for ${chartId}:`, {
-        chartId,
-        error: validationResult.error,
-        sampleData: data.songs?.[0] // Log first song for debugging
-      })
-      throw createError({
-        statusCode: 502,
-        statusMessage: `Invalid data from Billboard API for chart ${chartId}`
-      })
-    }
-
-    // Transform artist chart data to match expected format
-    const chartConfig = CHART_CONFIG[chartId as keyof typeof CHART_CONFIG]
-    if (chartConfig?.type === CHART_TYPES.ARTIST) {
-      data = {
-        ...data,
-        songs: data.songs.map((song: Record<string, unknown>) => ({
-          ...song,
-          artist: (song.artist as string) || (song.name as string) // For artist charts, use name as artist
-        }))
-      }
-    }
+    let { data } = result
 
     // Enrich with Apple Music if requested
-    if (includeAppleMusic) {
-      data = await enrichWithAppleMusic(data)
-    }
-
-    // Determine cache TTL
-    const ttl = week ? CACHE_TTL.HISTORICAL_CHART : CACHE_TTL.CURRENT_CHART
-    
-    // Cache the result
-    await cacheSet(cacheKey, data, ttl)
-    console.log(`📊 Chart ${chartId} fetched from API and cached (${week || 'current'} week)`)
-
-    return { ...data, cached: false }
-
-  } catch (error) {
-    console.error('Chart fetch error:', error)
-    
-    // Try to serve from cache as fallback
-    const cached = await cacheGet(cacheKey)
-    if (cached) {
-      console.log(`📊 Chart ${chartId} served from cache (fallback after API error)`)
-      return {
-        ...cached,
-        cached: true,
-        note: 'API error, serving cached data'
+    if (includeAppleMusic && data.songs.length > 0) {
+      try {
+        data = await enrichWithAppleMusic(data)
+      } catch (appleMusicError) {
+        console.warn(`Apple Music enrichment failed for chart ${chartId}:`, appleMusicError)
+        // Continue without Apple Music data rather than failing completely
       }
     }
 
-    // If no cache available, throw the error
-    throw error
+    // Add metadata to response
+    const response = {
+      ...data,
+      cached: result.cached,
+      metadata: {
+        ...result.metadata,
+        chartId,
+        includeAppleMusic,
+        quality: result.metadata.quality >= 0.8 ? 'high' : 
+                 result.metadata.quality >= 0.5 ? 'medium' : 'low'
+      }
+    }
+
+    // Log successful fetch
+    console.log(`📊 Chart ${chartId} (${week || 'current'}) - ` +
+      `${result.cached ? 'cached' : 'fresh'} - ` +
+      `${data.songs.length} songs - ` +
+      `quality: ${response.metadata.quality}`)
+
+    return response
+
+  } catch (error) {
+    console.error(`Chart fetch error for ${chartId}:`, error)
+    
+    // Map different error types to appropriate HTTP status codes
+    if (error instanceof Error) {
+      if (error.message.includes('API key not configured')) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Billboard API not configured'
+        })
+      }
+      
+      if (error.message.includes('timeout')) {
+        throw createError({
+          statusCode: 504,
+          statusMessage: 'Billboard API timeout'
+        })
+      }
+      
+      if (error.message.includes('Circuit breaker is OPEN')) {
+        throw createError({
+          statusCode: 503,
+          statusMessage: 'Billboard API temporarily unavailable'
+        })
+      }
+    }
+
+    // Default error response
+    throw createError({
+      statusCode: 502,
+      statusMessage: `Failed to fetch chart data for ${chartId}`
+    })
   }
 })
-
-// Modern Billboard API utility
-async function fetchBillboardChart(chartId: string, week?: string) {
-  const config = useRuntimeConfig()
-  
-  if (!config.rapidApiKey) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Billboard API key not configured'
-    })
-  }
-
-  const params = new URLSearchParams({ id: chartId })
-  if (week) params.append('week', week)
-
-  try {
-    const response = await fetch(`https://billboard-charts-api.p.rapidapi.com/chart.php?${params}`, {
-      headers: {
-        'X-RapidAPI-Key': config.rapidApiKey,
-        'X-RapidAPI-Host': 'billboard-charts-api.p.rapidapi.com'
-      },
-      signal: AbortSignal.timeout(10000) // Modern timeout
-    })
-
-    if (!response.ok) {
-      throw createError({
-        statusCode: response.status,
-        statusMessage: `Billboard API error: ${response.statusText}`
-      })
-    }
-
-    return await response.json()
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'TimeoutError') {
-      throw createError({
-        statusCode: 504,
-        statusMessage: 'Billboard API timeout'
-      })
-    }
-    throw error
-  }
-}

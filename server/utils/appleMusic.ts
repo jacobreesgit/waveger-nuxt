@@ -99,7 +99,7 @@ export async function searchAppleMusic(title: string, artist: string): Promise<A
 }
 
 // Modern parallel enrichment
-export async function enrichWithAppleMusic(chartData: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function enrichWithAppleMusic(chartData: any): Promise<any> {
   if (!chartData.songs || !Array.isArray(chartData.songs)) {
     return chartData
   }

@@ -46,7 +46,7 @@ export const AppleMusicSchema = z.object({
   artwork_url: z.string().url()
 })
 
-// Base schema for all chart entries
+// Lenient base schema for all chart entries - handles malformed Billboard API data
 const BaseChartEntrySchema = z.object({
   position: z.number().positive(),
   name: z.string().min(1),
@@ -57,19 +57,84 @@ const BaseChartEntrySchema = z.object({
   url: z.string().url()
 })
 
-// Song-based chart schema (Hot 100, Country Songs, etc.)
-export const RawSongSchema = BaseChartEntrySchema.extend({
+// Strict validation schema for transformed/cleaned data
+export const ValidatedChartEntrySchema = BaseChartEntrySchema.extend({
   artist: z.string().min(1)
+})
+
+// Raw schemas for Billboard API - more lenient to handle malformed data
+export const RawSongSchema = z.object({
+  position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  name: z.string().transform(val => val.trim() || 'Unknown Song'),
+  artist: z.string().nullish().transform(val => val?.trim() || 'Unknown Artist'),
+  image: z.string().nullish().transform(val => val || 'https://via.placeholder.com/300x300'),
+  last_week_position: z.union([z.number(), z.string(), z.null()]).transform(val => {
+    if (val === null || val === undefined) return 0
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 0 : Math.max(0, num)
+  }),
+  peak_position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  weeks_on_chart: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  url: z.string().nullish().transform(val => val || 'https://www.billboard.com')
 })
 
 // Artist-based chart schema (Artist 100, etc.)
-export const RawArtistSchema = BaseChartEntrySchema.extend({
-  artist: z.string().min(1).optional() // Artist field is optional, will be derived from name
+export const RawArtistSchema = z.object({
+  position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  name: z.string().transform(val => val.trim() || 'Unknown Artist'),
+  artist: z.string().nullish().default('Unknown Artist').transform(val => val?.trim() || 'Unknown Artist'),
+  image: z.string().nullish().transform(val => val || 'https://via.placeholder.com/300x300'),
+  last_week_position: z.union([z.number(), z.string(), z.null()]).transform(val => {
+    if (val === null || val === undefined) return 0
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 0 : Math.max(0, num)
+  }),
+  peak_position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  weeks_on_chart: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  url: z.string().nullish().transform(val => val || 'https://www.billboard.com')
 })
 
 // Album-based chart schema (Billboard 200, etc.)
-export const RawAlbumSchema = BaseChartEntrySchema.extend({
-  artist: z.string().min(1)
+export const RawAlbumSchema = z.object({
+  position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  name: z.string().transform(val => val.trim() || 'Unknown Album'),
+  artist: z.string().nullish().transform(val => val?.trim() || 'Unknown Artist'),
+  image: z.string().nullish().transform(val => val || 'https://via.placeholder.com/300x300'),
+  last_week_position: z.union([z.number(), z.string(), z.null()]).transform(val => {
+    if (val === null || val === undefined) return 0
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 0 : Math.max(0, num)
+  }),
+  peak_position: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  weeks_on_chart: z.union([z.number(), z.string()]).transform(val => {
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? 1 : Math.max(1, num)
+  }),
+  url: z.string().nullish().transform(val => val || 'https://www.billboard.com')
 })
 
 // Enriched song schema (with optional Apple Music data)
@@ -112,31 +177,54 @@ export const CHART_CONFIG = {
 } as const
 
 // Schema for raw Billboard API response (before Apple Music enrichment)
+// More lenient to handle malformed API responses
 export const BillboardResponseSchema = z.object({
-  info: z.string(),
-  songs: z.array(z.union([RawSongSchema, RawArtistSchema, RawAlbumSchema])),
-  title: z.string(),
-  week: z.string()
+  info: z.string().nullish().transform(val => val || 'Chart information'),
+  songs: z.array(z.unknown()).transform(val => {
+    // Filter out null/undefined entries and ensure array format
+    return Array.isArray(val) ? val.filter(item => item != null) : []
+  }),
+  title: z.string().nullish().transform(val => val || 'Billboard Chart'),
+  week: z.string().nullish().transform(val => val || new Date().toISOString().split('T')[0])
 })
 
-// Chart-specific response schemas
+// Chart-specific response schemas with better error handling
 export const createBillboardResponseSchema = (chartId: string) => {
   const config = CHART_CONFIG[chartId as keyof typeof CHART_CONFIG]
-  if (!config) {
-    // Default to song schema for unknown charts
-    return z.object({
-      info: z.string(),
-      songs: z.array(RawSongSchema),
-      title: z.string(),
-      week: z.string()
-    })
-  }
   
   return z.object({
-    info: z.string(),
-    songs: z.array(config.schema),
-    title: z.string(),
-    week: z.string()
+    info: z.string().nullish().transform(val => val || `Chart information for ${chartId}`),
+    songs: z.array(z.unknown()).transform((val, ctx) => {
+      if (!Array.isArray(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Songs must be an array'
+        })
+        return []
+      }
+      
+      const validSongs = []
+      for (let i = 0; i < val.length; i++) {
+        const song = val[i]
+        if (song && typeof song === 'object') {
+          try {
+            const schema = config?.schema || RawSongSchema
+            const result = schema.safeParse(song)
+            if (result.success) {
+              validSongs.push(result.data)
+            } else {
+              console.warn(`Invalid song at index ${i} for chart ${chartId}:`, result.error)
+            }
+          } catch (error) {
+            console.warn(`Error parsing song at index ${i} for chart ${chartId}:`, error)
+          }
+        }
+      }
+      
+      return validSongs
+    }),
+    title: z.string().nullish().transform(val => val || `Billboard ${chartId.replace('-', ' ')}`),
+    week: z.string().nullish().transform(val => val || new Date().toISOString().split('T')[0])
   })
 }
 

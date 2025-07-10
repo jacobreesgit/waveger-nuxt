@@ -14,7 +14,13 @@ export default defineEventHandler(async (event) => {
     services: {
       database: { status: 'unknown', latency: 0, error: null as string | null },
       redis: { status: 'unknown', latency: 0, error: null as string | null },
-      billboard: { status: 'unknown', latency: 0, error: null as string | null },
+      billboard: { 
+        status: 'unknown', 
+        latency: 0, 
+        error: null as string | null,
+        circuitBreaker: undefined as string | undefined,
+        dataQuality: undefined as string | undefined
+      },
       appleMusic: { status: 'unknown', latency: 0, error: null as string | null }
     },
     version: '1.0.0',
@@ -52,7 +58,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Detailed Billboard API health check
+  // Detailed Billboard API health check with circuit breaker info
   try {
     const billboardStart = Date.now()
     
@@ -60,33 +66,53 @@ export default defineEventHandler(async (event) => {
       health.services.billboard = {
         status: 'misconfigured',
         latency: 0,
-        error: 'RapidAPI key not configured'
+        error: 'RapidAPI key not configured',
+        circuitBreaker: undefined,
+        dataQuality: undefined
       }
     } else {
-      // Test actual API call with timeout
       try {
-        await $fetch('https://billboard-api2.p.rapidapi.com/hot-100', {
-          headers: {
-            'X-RapidAPI-Key': config.rapidApiKey,
-            'X-RapidAPI-Host': 'billboard-api2.p.rapidapi.com'
-          },
+        // Import the Billboard client
+        const { getBillboardClient } = await import('~/server/utils/billboardClient')
+        const billboardClient = getBillboardClient()
+        
+        // Get client health info
+        const clientHealth = billboardClient.getHealthInfo()
+        
+        // Test a quick chart fetch to verify connectivity
+        const testResult = await billboardClient.fetchChart('hot-100', {
           timeout: 5000,
-          retry: 0
+          skipCache: true
         })
         
         const billboardLatency = Date.now() - billboardStart
         health.services.billboard = {
-          status: 'healthy',
+          status: clientHealth.circuitBreakerState === 'OPEN' ? 'degraded' : 'healthy',
           latency: billboardLatency,
-          error: null
+          error: null,
+          circuitBreaker: clientHealth.circuitBreakerState,
+          dataQuality: testResult.metadata.quality >= 0.8 ? 'high' : 
+                       testResult.metadata.quality >= 0.5 ? 'medium' : 'low'
         }
       } catch (apiError: unknown) {
         const billboardLatency = Date.now() - billboardStart
-        const status = (apiError && typeof apiError === 'object' && 'status' in apiError && (apiError as {status: number}).status === 429) ? 'rate_limited' : 'unhealthy'
+        
+        // Determine status based on error type
+        let status = 'unhealthy'
+        if (apiError instanceof Error) {
+          if (apiError.message.includes('Circuit breaker is OPEN')) {
+            status = 'degraded'
+          } else if (apiError.message.includes('429') || apiError.message.includes('rate limit')) {
+            status = 'rate_limited'
+          }
+        }
+        
         health.services.billboard = {
           status,
           latency: billboardLatency,
-          error: `${(apiError && typeof apiError === 'object' && 'status' in apiError) ? (apiError as {status: number}).status : 'Unknown'}: ${(apiError && typeof apiError === 'object' && 'statusText' in apiError) ? (apiError as {statusText: string}).statusText : 'Error'}`
+          error: apiError instanceof Error ? apiError.message : 'Unknown API error',
+          circuitBreaker: undefined,
+          dataQuality: undefined
         }
       }
     }
@@ -94,7 +120,9 @@ export default defineEventHandler(async (event) => {
     health.services.billboard = {
       status: 'unhealthy',
       latency: 0,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      circuitBreaker: undefined,
+      dataQuality: undefined
     }
   }
 
